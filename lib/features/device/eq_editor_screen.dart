@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/qcy/eq.dart';
 import '../../core/qcy/product_features.dart';
+import '../../l10n/app_strings.dart';
 import '../../models/session.dart';
 import '../../providers/providers.dart';
 import '../../widgets/eq_band_editor.dart';
@@ -68,7 +69,7 @@ class _EqEditorScreenState extends ConsumerState<EqEditorScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('EQ update failed: $e')),
+          SnackBar(content: Text(context.strings.eqUpdateFailed(e))),
         );
       }
     } finally {
@@ -87,17 +88,13 @@ class _EqEditorScreenState extends ConsumerState<EqEditorScreen> {
         setState(() => _draft = params);
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Preset applied — band data not returned. Tap refresh or adjust manually.',
-            ),
-          ),
+          SnackBar(content: Text(context.strings.presetAppliedNoBandData)),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Preset failed: $e')),
+          SnackBar(content: Text(context.strings.presetFailed(e))),
         );
       }
     } finally {
@@ -142,10 +139,11 @@ class _EqEditorScreenState extends ConsumerState<EqEditorScreen> {
     final draft = _draft ?? _baseline();
     final features = featuresForVendor(session?.device.vendorId ?? 0);
     final selectedPreset = session?.settings.eqPresetIndex ?? draft.presetIndex;
+    final strings = context.strings;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('EQ bands'),
+        title: Text(strings.eqBands),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
@@ -165,9 +163,9 @@ class _EqEditorScreenState extends ConsumerState<EqEditorScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const SectionHeader(
-            title: 'Presets',
-            subtitle: 'Switch preset to load its curve into the bands below.',
+          SectionHeader(
+            title: strings.presets,
+            subtitle: strings.presetSubtitle,
           ),
           Card(
             child: Padding(
@@ -182,9 +180,8 @@ class _EqEditorScreenState extends ConsumerState<EqEditorScreen> {
           ),
           const SizedBox(height: 20),
           SectionHeader(
-            title: 'Band levels',
-            subtitle:
-                '±${_eqFeature.maxDb.toStringAsFixed(0)} dB per band. Drag sliders to customize.',
+            title: strings.bandLevels,
+            subtitle: strings.bandLevelsSubtitle(_eqFeature.maxDb),
           ),
           Card(
             child: Padding(

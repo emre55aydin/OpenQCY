@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/qcy/key_function.dart';
 import '../../core/qcy/product_features.dart';
+import '../../l10n/app_strings.dart';
 import '../../models/session.dart';
 import '../../providers/providers.dart';
 import '../../widgets/settings_ui.dart';
@@ -69,13 +70,13 @@ class _KeyFunctionScreenState extends ConsumerState<KeyFunctionScreen> {
       await ref.read(bleControllerProvider).writeKeyFunctions(_draft);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Touch controls saved')),
+          SnackBar(content: Text(context.strings.touchControlsSaved)),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Save failed: $e')),
+          SnackBar(content: Text(context.strings.saveFailed(e))),
         );
       }
     } finally {
@@ -93,10 +94,11 @@ class _KeyFunctionScreenState extends ConsumerState<KeyFunctionScreen> {
     final interactive =
         session?.phase == ConnectionPhase.connected && !session!.isBusy;
     final gestures = _features.keyGestures;
+    final strings = context.strings;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Touch controls'),
+        title: Text(strings.touchControls),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
@@ -110,7 +112,7 @@ class _KeyFunctionScreenState extends ConsumerState<KeyFunctionScreen> {
                     height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Save'),
+                : Text(strings.save),
           ),
         ],
       ),
@@ -120,18 +122,18 @@ class _KeyFunctionScreenState extends ConsumerState<KeyFunctionScreen> {
               padding: const EdgeInsets.all(20),
               children: [
                 Text(
-                  'Assign actions for each earbud gesture.',
+                  strings.assignActions,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                 ),
                 const SizedBox(height: 20),
                 for (final gesture in gestures) ...[
-                  SectionHeader(title: gesture.name),
+                  SectionHeader(title: strings.gestureName(gesture.name)),
                   SettingsCard(
                     children: [
                       _KeyRow(
-                        label: 'Left',
+                        label: strings.left,
                         value: _draft[gesture.leftKeyId] ?? QcyFuncId.none,
                         options: _labels,
                         enabled: interactive,
@@ -139,7 +141,7 @@ class _KeyFunctionScreenState extends ConsumerState<KeyFunctionScreen> {
                       ),
                       const Divider(height: 1),
                       _KeyRow(
-                        label: 'Right',
+                        label: strings.right,
                         value: _draft[gesture.rightKeyId] ?? QcyFuncId.none,
                         options: _labels,
                         enabled: interactive,
@@ -172,13 +174,17 @@ class _KeyRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = context.strings;
     return ListTile(
       title: Text(label),
       trailing: DropdownButton<int>(
         value: uiIndexFromFuncId(value).clamp(0, options.length - 1),
         items: [
           for (var i = 0; i < options.length; i++)
-            DropdownMenuItem(value: i, child: Text(options[i])),
+            DropdownMenuItem(
+              value: i,
+              child: Text(strings.keyFunction(options[i])),
+            ),
         ],
         onChanged: enabled ? (i) => onChanged(funcIdFromUiIndex(i ?? 0)) : null,
       ),

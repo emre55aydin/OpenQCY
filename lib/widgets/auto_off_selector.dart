@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/qcy/key_function.dart';
+import '../l10n/app_strings.dart';
 
 class AutoOffSelector extends StatelessWidget {
   const AutoOffSelector({
@@ -20,11 +21,12 @@ class AutoOffSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     final current = selectedMinutes ?? disabledMinutes;
     final normalized = current >= disabledMinutes ? disabledMinutes : current;
+    final strings = context.strings;
 
     return InputDecorator(
-      decoration: const InputDecoration(
-        labelText: 'Auto power-off',
-        border: OutlineInputBorder(),
+      decoration: InputDecoration(
+        labelText: strings.autoPowerOff,
+        border: const OutlineInputBorder(),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<int>(
@@ -36,7 +38,7 @@ class AutoOffSelector extends StatelessWidget {
             for (final m in autoOffPresetMinutes)
               DropdownMenuItem(
                 value: m,
-                child: Text(labelForAutoOffMinutes(m)),
+                child: Text(strings.autoOffMinutes(m)),
               ),
           ],
           onChanged: enabled ? (v) => onSelected(v ?? disabledMinutes) : null,

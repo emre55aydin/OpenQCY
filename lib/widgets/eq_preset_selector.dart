@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_strings.dart';
+
 class EqPresetSelector extends StatelessWidget {
   const EqPresetSelector({
     super.key,
@@ -17,6 +19,7 @@ class EqPresetSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final strings = context.strings;
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -26,7 +29,7 @@ class EqPresetSelector extends StatelessWidget {
             Padding(
               padding: EdgeInsets.only(right: i == presets.length - 1 ? 0 : 8),
               child: ChoiceChip(
-                label: Text(presets[i]),
+                label: Text(strings.eqPreset(presets[i])),
                 selected: selectedIndex == i,
                 onSelected: enabled ? (_) => onSelected(i) : null,
                 selectedColor: scheme.primaryContainer,

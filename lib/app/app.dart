@@ -1,5 +1,6 @@
 import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -8,6 +9,7 @@ import '../features/device/eq_editor_screen.dart';
 import '../features/device/key_function_screen.dart';
 import '../features/scan/scan_screen.dart';
 import '../features/settings/settings_screen.dart';
+import '../l10n/app_strings.dart';
 import 'theme.dart';
 
 final _rootKey = GlobalKey<NavigatorState>();
@@ -77,6 +79,19 @@ class MeloControlApp extends ConsumerWidget {
       theme: buildAppTheme(brightness: Brightness.light),
       darkTheme: buildAppTheme(brightness: Brightness.dark),
       themeMode: ThemeMode.system,
+      localizationsDelegates: const [
+        AppStrings.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppStrings.supportedLocales,
+      localeResolutionCallback: (locale, supportedLocales) {
+        if (locale?.languageCode.toLowerCase() == 'tr') {
+          return const Locale('tr');
+        }
+        return const Locale('en');
+      },
       routerConfig: router,
     );
   }

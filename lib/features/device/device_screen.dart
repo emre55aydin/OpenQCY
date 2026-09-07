@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/qcy/anc.dart';
 import '../../core/qcy/product_features.dart';
+import '../../l10n/app_strings.dart';
 import '../../models/device_info.dart';
 import '../../models/session.dart';
 import '../../providers/providers.dart';
@@ -30,7 +31,7 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$label failed: $e')),
+          SnackBar(content: Text(context.strings.actionFailed(label, e))),
         );
       }
     }
@@ -47,24 +48,26 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
   Future<void> _renameDevice() async {
     final session = ref.read(bleControllerProvider).session;
     if (session == null) return;
+    final strings = context.strings;
     final controller = TextEditingController(text: session.device.displayName);
     final name = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Rename device'),
+      builder: (dialogContext) => AlertDialog(
+        title: Text(strings.renameDevice),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(hintText: 'Device name'),
+          decoration: InputDecoration(hintText: strings.deviceName),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(strings.cancel),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Save'),
+            onPressed: () =>
+                Navigator.pop(dialogContext, controller.text.trim()),
+            child: Text(strings.save),
           ),
         ],
       ),
@@ -72,15 +75,16 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
     if (name == null || name.isEmpty) return;
     await _run(
       () => ref.read(bleControllerProvider).setDeviceName(name),
-      'Rename',
+      strings.rename,
     );
   }
 
   Future<void> _showFindEarbuds() async {
+    final strings = context.strings;
     await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      builder: (context) {
+      builder: (sheetContext) {
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
@@ -89,31 +93,31 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Find earbuds',
-                  style: Theme.of(context).textTheme.titleLarge,
+                  strings.findEarbuds,
+                  style: Theme.of(sheetContext).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Plays a locating tone on the earbuds. Stop when you find them.',
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  strings.findEarbudsDescription,
+                  style: Theme.of(sheetContext).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 20),
                 FilledButton.icon(
                   onPressed: () => _run(
                     () => ref.read(bleControllerProvider).setFindEarbuds(true),
-                    'Find',
+                    strings.findEarbuds,
                   ),
                   icon: const Icon(Icons.play_arrow),
-                  label: const Text('Start locating'),
+                  label: Text(strings.startLocating),
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: () => _run(
                     () => ref.read(bleControllerProvider).setFindEarbuds(false),
-                    'Stop find',
+                    strings.stop,
                   ),
                   icon: const Icon(Icons.stop),
-                  label: const Text('Stop'),
+                  label: Text(strings.stop),
                 ),
               ],
             ),
@@ -138,14 +142,15 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
     final ble = ref.watch(bleControllerProvider);
     final session = ble.session;
     final scheme = Theme.of(context).colorScheme;
+    final strings = context.strings;
 
     if (session == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Device')),
+        appBar: AppBar(title: Text(strings.device)),
         body: Center(
           child: FilledButton(
             onPressed: () => context.go('/'),
-            child: const Text('Back to scan'),
+            child: Text(strings.backToScan),
           ),
         ),
       );
@@ -164,356 +169,365 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
         }
       },
       child: Scaffold(
-      appBar: AppBar(
-        title: Text(session.device.displayName),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: _goBack,
+        appBar: AppBar(
+          title: Text(session.device.displayName),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: _goBack,
+          ),
+          actions: [
+            IconButton(
+              onPressed: interactive ? () => ble.refreshStatus() : null,
+              icon: const Icon(Icons.refresh),
+              tooltip: strings.scanAgain,
+            ),
+            IconButton(
+              onPressed: () => context.push('/settings'),
+              icon: const Icon(Icons.settings_outlined),
+              tooltip: strings.settings,
+            ),
+            IconButton(
+              onPressed: connected ? _disconnect : null,
+              icon: const Icon(Icons.link_off),
+              tooltip: strings.disconnect,
+            ),
+          ],
         ),
-        actions: [
-          IconButton(
-            onPressed: interactive ? () => ble.refreshStatus() : null,
-            icon: const Icon(Icons.refresh),
-          ),
-          IconButton(
-            onPressed: () => context.push('/settings'),
-            icon: const Icon(Icons.settings_outlined),
-          ),
-          IconButton(
-            onPressed: connected ? _disconnect : null,
-            icon: const Icon(Icons.link_off),
-            tooltip: 'Disconnect',
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          _StatusBanner(session: session),
-          const SizedBox(height: 20),
-          _BatteryCard(battery: session.battery),
-          if (session.firmware != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Firmware L ${session.firmware!.left}'
-              '${session.firmware!.right != null ? ' · R ${session.firmware!.right}' : ''}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-          const SizedBox(height: 24),
-          const SectionHeader(
-            title: 'Noise control',
-            subtitle: 'You should hear the voice prompt on change.',
-          ),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: AncSelector(
-                selected: session.ancMode,
-                busy: _ancBusy || !interactive,
-                onSelected: _setAnc,
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          const SectionHeader(title: 'Equalizer'),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: EqPresetSelector(
-                presets: features.eqPresets,
-                selectedIndex: s.eqPresetIndex,
-                enabled: interactive,
-                onSelected: (i) => _run(
-                  () => ref.read(bleControllerProvider).setEqPreset(i),
-                  'EQ',
-                ),
-              ),
-            ),
-          ),
-          if (features.eq != null) ...[
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: interactive
-                    ? () => context.push('/device/eq')
-                    : null,
-                icon: const Icon(Icons.tune),
-                label: const Text('Customize bands'),
-              ),
-            ),
-          ],
-          const SizedBox(height: 24),
-          const SectionHeader(title: 'Audio'),
-          SettingsCard(
-            children: [
-              ListTile(
-                title: const Text('Volume'),
-                subtitle: Text('L ${s.volumeLeft}% · R ${s.volumeRight}%'),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Slider(
-                        value: s.volumeLeft.toDouble(),
-                        min: 0,
-                        max: 100,
-                        divisions: 100,
-                        label: 'L ${s.volumeLeft}',
-                        onChanged: interactive
-                            ? (v) => ref
-                                .read(bleControllerProvider)
-                                .setVolume(v.round(), s.volumeRight)
-                            : null,
-                      ),
+        body: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            _StatusBanner(session: session),
+            const SizedBox(height: 20),
+            _BatteryCard(battery: session.battery),
+            if (session.firmware != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Firmware ${strings.left} ${session.firmware!.left}'
+                '${session.firmware!.right != null ? ' · ${strings.right} ${session.firmware!.right}' : ''}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
                     ),
-                    Expanded(
-                      child: Slider(
-                        value: s.volumeRight.toDouble(),
-                        min: 0,
-                        max: 100,
-                        divisions: 100,
-                        label: 'R ${s.volumeRight}',
-                        onChanged: interactive
-                            ? (v) => ref
-                                .read(bleControllerProvider)
-                                .setVolume(s.volumeLeft, v.round())
-                            : null,
-                      ),
-                    ),
-                  ],
-                ),
+                textAlign: TextAlign.center,
               ),
-              if (features.channelBalance)
-                ListTile(
-                  title: const Text('Channel balance'),
-                  subtitle: Slider(
-                    value: s.soundBalance.toDouble(),
-                    min: 0,
-                    max: 100,
-                    divisions: 100,
-                    label: s.soundBalance == 50
-                        ? 'Center'
-                        : s.soundBalance < 50
-                            ? 'Left'
-                            : 'Right',
-                    onChanged: interactive
-                        ? (v) => ref
-                            .read(bleControllerProvider)
-                            .setSoundBalance(v.round())
-                        : null,
-                  ),
-                ),
             ],
-          ),
-          const SizedBox(height: 24),
-          if (features.hasKeyFunctions) ...[
-            const SectionHeader(
-              title: 'Controls',
-              subtitle: 'Customize touch gestures per earbud.',
-            ),
-            SettingsCard(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.touch_app_outlined),
-                  title: const Text('Touch controls'),
-                  subtitle: const Text('Single, double, and triple tap'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: interactive
-                      ? () => context.push('/device/keys')
-                      : null,
-                ),
-              ],
-            ),
             const SizedBox(height: 24),
-          ],
-          if (features.autoOffTimer != null) ...[
-            const SectionHeader(
-              title: 'Power',
-              subtitle: 'Auto power-off when idle.',
+            SectionHeader(
+              title: strings.noiseControl,
+              subtitle: strings.noiseControlSubtitle,
             ),
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: AutoOffSelector(
-                  selectedMinutes: s.autoOffMinutes,
-                  disabledMinutes: features.autoOffTimer!.disabledMinutes,
-                  enabled: interactive,
-                  onSelected: (m) => _run(
-                    () => ref.read(bleControllerProvider).setAutoOffMinutes(m),
-                    'Auto power-off',
-                  ),
+                child: AncSelector(
+                  selected: session.ancMode,
+                  busy: _ancBusy || !interactive,
+                  onSelected: _setAnc,
                 ),
               ),
             ),
             const SizedBox(height: 24),
-          ],
-          const SectionHeader(title: 'Features'),
-          SettingsCard(
-            children: [
-              SwitchListTile(
-                title: const Text('Gaming mode'),
-                subtitle: const Text('Low latency'),
-                value: s.gameMode,
-                onChanged: interactive
-                    ? (v) => _run(
-                          () => ref.read(bleControllerProvider).setGameMode(v),
-                          'Game mode',
-                        )
-                    : null,
-              ),
-              if (features.ldac)
-                SwitchListTile(
-                  title: const Text('LDAC'),
-                  subtitle: const Text('High quality codec'),
-                  value: s.ldac,
-                  onChanged: interactive
-                      ? (v) => _run(
-                            () => ref.read(bleControllerProvider).setLdac(v),
-                            'LDAC',
-                          )
-                      : null,
-                ),
-              if (features.sleepMode)
-                SwitchListTile(
-                  title: const Text('Sleep mode'),
-                  value: s.sleepMode,
-                  onChanged: interactive
-                      ? (v) => _run(
-                            () =>
-                                ref.read(bleControllerProvider).setSleepMode(v),
-                            'Sleep mode',
-                          )
-                      : null,
-                ),
-              if (features.spatialAudio)
-                SwitchListTile(
-                  title: const Text('Spatial audio'),
-                  value: s.spatialAudio,
-                  onChanged: interactive
-                      ? (v) => _run(
-                            () => ref
-                                .read(bleControllerProvider)
-                                .setSpatialAudio(v),
-                            'Spatial audio',
-                          )
-                      : null,
-                ),
-              if (features.inEarDetection)
-                SwitchListTile(
-                  title: const Text('In-ear detection'),
-                  value: s.inEarDetection,
-                  onChanged: interactive
-                      ? (v) => _run(
-                            () => ref
-                                .read(bleControllerProvider)
-                                .setInEarDetection(v),
-                            'In-ear detection',
-                          )
-                      : null,
-                ),
-              if (features.dualDevice)
-                SwitchListTile(
-                  title: const Text('Dual device connection'),
-                  value: s.dualDevice,
-                  onChanged: interactive
-                      ? (v) => _run(
-                            () =>
-                                ref.read(bleControllerProvider).setDualDevice(v),
-                            'Dual device',
-                          )
-                      : null,
-                ),
-              if (features.findEarphone)
-                ListTile(
-                  leading: const Icon(Icons.location_searching),
-                  title: const Text('Find earbuds'),
-                  onTap: interactive ? _showFindEarbuds : null,
-                ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          const SectionHeader(title: 'Device'),
-          SettingsCard(
-            children: [
-              if (features.deviceRename)
-                ListTile(
-                  leading: const Icon(Icons.drive_file_rename_outline),
-                  title: const Text('Rename'),
-                  onTap: interactive ? _renameDevice : null,
-                ),
-              ListTile(
-                leading: Icon(Icons.restart_alt, color: scheme.error),
-                title: const Text('Reset to defaults'),
-                onTap: interactive
-                    ? () async {
-                        if (await confirmAction(
-                          context,
-                          title: 'Reset settings?',
-                          message:
-                              'Restores factory default settings (not pairing).',
-                        )) {
-                          await _run(
-                            () => ref
-                                .read(bleControllerProvider)
-                                .resetToDefault(),
-                            'Reset',
-                          );
-                        }
-                      }
-                    : null,
-              ),
-              ListTile(
-                leading: Icon(Icons.delete_forever, color: scheme.error),
-                title: const Text('Factory reset'),
-                onTap: interactive
-                    ? () async {
-                        if (await confirmAction(
-                          context,
-                          title: 'Factory reset?',
-                          message:
-                              'Clears all settings and pairing. This cannot be undone.',
-                          confirm: 'Reset',
-                          destructive: true,
-                        )) {
-                          await _run(
-                            () => ref
-                                .read(bleControllerProvider)
-                                .factoryReset(),
-                            'Factory reset',
-                          );
-                        }
-                      }
-                    : null,
-              ),
-            ],
-          ),
-          if (session.errorMessage != null) ...[
-            const SizedBox(height: 16),
-            MaterialBanner(
-              content: Text(session.errorMessage!),
-              actions: [
-                TextButton(
-                  onPressed: () => _run(
-                    () => session.phase == ConnectionPhase.error
-                        ? ble.retryReconnect()
-                        : ble.connect(session.device),
-                    'Reconnect',
+            SectionHeader(title: strings.equalizer),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: EqPresetSelector(
+                  presets: features.eqPresets,
+                  selectedIndex: s.eqPresetIndex,
+                  enabled: interactive,
+                  onSelected: (i) => _run(
+                    () => ref.read(bleControllerProvider).setEqPreset(i),
+                    'EQ',
                   ),
-                  child: const Text('Retry'),
+                ),
+              ),
+            ),
+            if (features.eq != null) ...[
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: interactive
+                      ? () => context.push('/device/eq')
+                      : null,
+                  icon: const Icon(Icons.tune),
+                  label: Text(strings.customizeBands),
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
+            SectionHeader(title: strings.audio),
+            SettingsCard(
+              children: [
+                ListTile(
+                  title: Text(strings.volume),
+                  subtitle: Text(
+                    '${strings.left} ${s.volumeLeft}% · ${strings.right} ${s.volumeRight}%',
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Slider(
+                          value: s.volumeLeft.toDouble(),
+                          min: 0,
+                          max: 100,
+                          divisions: 100,
+                          label: '${strings.left} ${s.volumeLeft}',
+                          onChanged: interactive
+                              ? (v) => ref
+                                  .read(bleControllerProvider)
+                                  .setVolume(v.round(), s.volumeRight)
+                              : null,
+                        ),
+                      ),
+                      Expanded(
+                        child: Slider(
+                          value: s.volumeRight.toDouble(),
+                          min: 0,
+                          max: 100,
+                          divisions: 100,
+                          label: '${strings.right} ${s.volumeRight}',
+                          onChanged: interactive
+                              ? (v) => ref
+                                  .read(bleControllerProvider)
+                                  .setVolume(s.volumeLeft, v.round())
+                              : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (features.channelBalance)
+                  ListTile(
+                    title: Text(strings.channelBalance),
+                    subtitle: Slider(
+                      value: s.soundBalance.toDouble(),
+                      min: 0,
+                      max: 100,
+                      divisions: 100,
+                      label: s.soundBalance == 50
+                          ? strings.center
+                          : s.soundBalance < 50
+                              ? strings.left
+                              : strings.right,
+                      onChanged: interactive
+                          ? (v) => ref
+                              .read(bleControllerProvider)
+                              .setSoundBalance(v.round())
+                          : null,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            if (features.hasKeyFunctions) ...[
+              SectionHeader(
+                title: strings.controls,
+                subtitle: strings.controlsSubtitle,
+              ),
+              SettingsCard(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.touch_app_outlined),
+                    title: Text(strings.touchControls),
+                    subtitle: Text(strings.tapTypes),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: interactive
+                        ? () => context.push('/device/keys')
+                        : null,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+            ],
+            if (features.autoOffTimer != null) ...[
+              SectionHeader(
+                title: strings.power,
+                subtitle: strings.powerSubtitle,
+              ),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: AutoOffSelector(
+                    selectedMinutes: s.autoOffMinutes,
+                    disabledMinutes: features.autoOffTimer!.disabledMinutes,
+                    enabled: interactive,
+                    onSelected: (m) => _run(
+                      () =>
+                          ref.read(bleControllerProvider).setAutoOffMinutes(m),
+                      strings.autoPowerOff,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+            SectionHeader(title: strings.features),
+            SettingsCard(
+              children: [
+                SwitchListTile(
+                  title: Text(strings.gamingMode),
+                  subtitle: Text(strings.lowLatency),
+                  value: s.gameMode,
+                  onChanged: interactive
+                      ? (v) => _run(
+                            () =>
+                                ref.read(bleControllerProvider).setGameMode(v),
+                            strings.gamingMode,
+                          )
+                      : null,
+                ),
+                if (features.ldac)
+                  SwitchListTile(
+                    title: const Text('LDAC'),
+                    subtitle: Text(strings.highQualityCodec),
+                    value: s.ldac,
+                    onChanged: interactive
+                        ? (v) => _run(
+                              () => ref.read(bleControllerProvider).setLdac(v),
+                              'LDAC',
+                            )
+                        : null,
+                  ),
+                if (features.sleepMode)
+                  SwitchListTile(
+                    title: Text(strings.sleepMode),
+                    value: s.sleepMode,
+                    onChanged: interactive
+                        ? (v) => _run(
+                              () =>
+                                  ref.read(bleControllerProvider).setSleepMode(v),
+                              strings.sleepMode,
+                            )
+                        : null,
+                  ),
+                if (features.spatialAudio)
+                  SwitchListTile(
+                    title: Text(strings.spatialAudio),
+                    value: s.spatialAudio,
+                    onChanged: interactive
+                        ? (v) => _run(
+                              () => ref
+                                  .read(bleControllerProvider)
+                                  .setSpatialAudio(v),
+                              strings.spatialAudio,
+                            )
+                        : null,
+                  ),
+                if (features.inEarDetection)
+                  SwitchListTile(
+                    title: Text(strings.inEarDetection),
+                    value: s.inEarDetection,
+                    onChanged: interactive
+                        ? (v) => _run(
+                              () => ref
+                                  .read(bleControllerProvider)
+                                  .setInEarDetection(v),
+                              strings.inEarDetection,
+                            )
+                        : null,
+                  ),
+                if (features.dualDevice)
+                  SwitchListTile(
+                    title: Text(strings.dualDeviceConnection),
+                    value: s.dualDevice,
+                    onChanged: interactive
+                        ? (v) => _run(
+                              () =>
+                                  ref.read(bleControllerProvider).setDualDevice(v),
+                              strings.dualDeviceConnection,
+                            )
+                        : null,
+                  ),
+                if (features.findEarphone)
+                  ListTile(
+                    leading: const Icon(Icons.location_searching),
+                    title: Text(strings.findEarbuds),
+                    onTap: interactive ? _showFindEarbuds : null,
+                  ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            SectionHeader(title: strings.device),
+            SettingsCard(
+              children: [
+                if (features.deviceRename)
+                  ListTile(
+                    leading: const Icon(Icons.drive_file_rename_outline),
+                    title: Text(strings.rename),
+                    onTap: interactive ? _renameDevice : null,
+                  ),
+                ListTile(
+                  leading: Icon(Icons.restart_alt, color: scheme.error),
+                  title: Text(strings.resetToDefaults),
+                  onTap: interactive
+                      ? () async {
+                          if (await confirmAction(
+                            context,
+                            title: strings.resetSettingsTitle,
+                            message: strings.resetSettingsMessage,
+                            confirm: strings.reset,
+                            cancel: strings.cancel,
+                          )) {
+                            await _run(
+                              () => ref
+                                  .read(bleControllerProvider)
+                                  .resetToDefault(),
+                              strings.reset,
+                            );
+                          }
+                        }
+                      : null,
+                ),
+                ListTile(
+                  leading: Icon(Icons.delete_forever, color: scheme.error),
+                  title: Text(strings.factoryReset),
+                  onTap: interactive
+                      ? () async {
+                          if (await confirmAction(
+                            context,
+                            title: strings.factoryResetTitle,
+                            message: strings.factoryResetMessage,
+                            confirm: strings.reset,
+                            cancel: strings.cancel,
+                            destructive: true,
+                          )) {
+                            await _run(
+                              () => ref
+                                  .read(bleControllerProvider)
+                                  .factoryReset(),
+                              strings.factoryReset,
+                            );
+                          }
+                        }
+                      : null,
                 ),
               ],
             ),
+            if (session.errorMessage != null) ...[
+              const SizedBox(height: 16),
+              MaterialBanner(
+                content: Text(
+                  strings.localizeErrorMessage(session.errorMessage!),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => _run(
+                      () => session.phase == ConnectionPhase.error
+                          ? ble.retryReconnect()
+                          : ble.connect(session.device),
+                      strings.reconnect,
+                    ),
+                    child: Text(strings.retry),
+                  ),
+                ],
+              ),
+            ],
           ],
-        ],
+        ),
       ),
-    ),
     );
   }
 }
@@ -525,6 +539,7 @@ class _BatteryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = context.strings;
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
@@ -534,18 +549,18 @@ class _BatteryCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   BatteryRing(
-                    label: 'Left',
+                    label: strings.leftEarbud,
                     level: battery!.left,
                     charging: battery!.leftCharging,
                   ),
                   BatteryRing(
-                    label: 'Right',
+                    label: strings.rightEarbud,
                     level: battery!.right,
                     charging: battery!.rightCharging,
                   ),
                   if (battery!.hasCase)
                     BatteryRing(
-                      label: 'Case',
+                      label: strings.caseLabel,
                       level: battery!.caseLevel!,
                       charging: battery!.caseCharging,
                       icon: Icons.inventory_2_outlined,
@@ -565,29 +580,34 @@ class _StatusBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final strings = context.strings;
     final (label, color, icon) = switch (session.phase) {
       ConnectionPhase.connected => (
-          'Connected',
+          strings.connected,
           scheme.primaryContainer,
           Icons.link,
         ),
       ConnectionPhase.connecting => (
-          session.statusMessage ?? 'Connecting…',
+          session.statusMessage == null
+              ? strings.connecting
+              : strings.localizeStatusMessage(session.statusMessage),
           scheme.secondaryContainer,
           Icons.bluetooth_connected,
         ),
       ConnectionPhase.reconnecting => (
-          session.statusMessage ?? 'Reconnecting…',
+          session.statusMessage == null
+              ? strings.reconnecting
+              : strings.localizeStatusMessage(session.statusMessage),
           scheme.secondaryContainer,
           Icons.bluetooth_searching,
         ),
       ConnectionPhase.error => (
-          'Error',
+          strings.error,
           scheme.errorContainer,
           Icons.error_outline,
         ),
       ConnectionPhase.disconnected => (
-          'Disconnected',
+          strings.disconnected,
           scheme.surfaceContainerHighest,
           Icons.link_off,
         ),
