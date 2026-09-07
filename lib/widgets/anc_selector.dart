@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/qcy/anc.dart';
+import '../l10n/app_strings.dart';
 
 class AncSelector extends StatelessWidget {
   const AncSelector({
@@ -19,6 +20,7 @@ class AncSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final strings = context.strings;
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 280),
@@ -41,7 +43,7 @@ class AncSelector extends StatelessWidget {
                     selected: selected == mode,
                     showCheckmark: true,
                     avatar: Icon(_iconFor(mode), size: 18),
-                    label: Text(mode.label),
+                    label: Text(strings.ancMode(mode.name)),
                     onSelected: busy ? null : (_) => onSelected(mode),
                     selectedColor: scheme.primaryContainer,
                     checkmarkColor: scheme.onPrimaryContainer,
