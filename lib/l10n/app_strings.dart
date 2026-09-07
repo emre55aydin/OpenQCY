@@ -35,12 +35,14 @@ class AppStrings {
   String get bluetoothPermissionsRequired => _tr
       ? 'Kulaklığı kontrol etmek için Bluetooth izinleri gereklidir'
       : 'Bluetooth permissions are required to control earbuds';
-  String scanFailed(Object error) =>
-      _tr ? 'Tarama başarısız: $error' : 'Scan failed: $error';
-  String connectFailed(Object error) =>
-      _tr ? 'Bağlantı başarısız: $error' : 'Connect failed: $error';
+  String scanFailed(Object error) => _tr
+      ? 'Tarama başarısız: ${localizeErrorMessage(error.toString())}'
+      : 'Scan failed: $error';
+  String connectFailed(Object error) => _tr
+      ? 'Bağlantı başarısız: ${localizeErrorMessage(error.toString())}'
+      : 'Connect failed: $error';
   String reconnectFailed(Object error) => _tr
-      ? 'Yeniden bağlanma başarısız: $error'
+      ? 'Yeniden bağlanma başarısız: ${localizeErrorMessage(error.toString())}'
       : 'Reconnect failed: $error';
   String reconnectTo(String name) =>
       _tr ? '$name cihazına yeniden bağlan' : 'Reconnect to $name';
@@ -65,8 +67,9 @@ class AppStrings {
         : 'L $left% · R $right% · Case $caseLevel%';
   }
 
-  String actionFailed(String label, Object error) =>
-      _tr ? '$label başarısız: $error' : '$label failed: $error';
+  String actionFailed(String label, Object error) => _tr
+      ? '$label başarısız: ${localizeErrorMessage(error.toString())}'
+      : '$label failed: $error';
   String get renameDevice => _tr ? 'Cihazın adını değiştir' : 'Rename device';
   String get deviceName => _tr ? 'Cihaz adı' : 'Device name';
   String get findEarbuds => _tr ? 'Kulaklıkları bul' : 'Find earbuds';
@@ -77,6 +80,7 @@ class AppStrings {
   String get device => _tr ? 'Cihaz' : 'Device';
   String get backToScan => _tr ? 'Taramaya dön' : 'Back to scan';
   String get disconnect => _tr ? 'Bağlantıyı kes' : 'Disconnect';
+  String get firmware => _tr ? 'Donanım yazılımı' : 'Firmware';
   String get noiseControl => _tr ? 'Gürültü kontrolü' : 'Noise control';
   String get noiseControlSubtitle => _tr
       ? 'Değişiklikte kulaklıktan sesli bildirim duymalısınız.'
@@ -97,14 +101,14 @@ class AppStrings {
   String get tapTypes =>
       _tr ? 'Tek, çift ve üçlü dokunma' : 'Single, double, and triple tap';
   String get power => _tr ? 'Güç' : 'Power';
-  String get powerSubtitle => _tr
-      ? 'Boştayken otomatik kapanma.'
-      : 'Auto power-off when idle.';
+  String get powerSubtitle =>
+      _tr ? 'Boştayken otomatik kapanma.' : 'Auto power-off when idle.';
   String get autoPowerOff => _tr ? 'Otomatik kapanma' : 'Auto power-off';
   String get features => _tr ? 'Özellikler' : 'Features';
   String get gamingMode => _tr ? 'Oyun modu' : 'Gaming mode';
   String get lowLatency => _tr ? 'Düşük gecikme' : 'Low latency';
-  String get highQualityCodec => _tr ? 'Yüksek kaliteli codec' : 'High quality codec';
+  String get highQualityCodec =>
+      _tr ? 'Yüksek kaliteli codec' : 'High quality codec';
   String get sleepMode => _tr ? 'Uyku modu' : 'Sleep mode';
   String get spatialAudio => _tr ? 'Uzamsal ses' : 'Spatial audio';
   String get inEarDetection => _tr ? 'Kulakta algılama' : 'In-ear detection';
@@ -113,11 +117,13 @@ class AppStrings {
   String get rename => _tr ? 'Yeniden adlandır' : 'Rename';
   String get resetToDefaults =>
       _tr ? 'Varsayılan ayarlara dön' : 'Reset to defaults';
-  String get resetSettingsTitle => _tr ? 'Ayarlar sıfırlansın mı?' : 'Reset settings?';
+  String get resetSettingsTitle =>
+      _tr ? 'Ayarlar sıfırlansın mı?' : 'Reset settings?';
   String get resetSettingsMessage => _tr
       ? 'Fabrika varsayılan ayarlarını geri yükler (eşleştirme silinmez).'
       : 'Restores factory default settings (not pairing).';
-  String get factoryReset => _tr ? 'Fabrika ayarlarına sıfırla' : 'Factory reset';
+  String get factoryReset =>
+      _tr ? 'Fabrika ayarlarına sıfırla' : 'Factory reset';
   String get factoryResetTitle =>
       _tr ? 'Fabrika ayarlarına sıfırlansın mı?' : 'Factory reset?';
   String get factoryResetMessage => _tr
@@ -151,22 +157,44 @@ class AppStrings {
 
   String localizeErrorMessage(String message) {
     if (!_tr) return message;
-    if (message == 'Device disconnected') return 'Cihaz bağlantısı kesildi';
-    if (message ==
+
+    var value = message;
+    if (value.startsWith('Bad state: ')) {
+      value = value.substring('Bad state: '.length);
+    }
+
+    if (value == 'Device disconnected') return 'Cihaz bağlantısı kesildi';
+    if (value == 'Not connected') return 'Cihaza bağlı değil';
+    if (value == 'Key function characteristic unavailable') {
+      return 'Dokunmatik kontrol özelliğine erişilemiyor';
+    }
+    if (value == 'Required GATT characteristics missing on QCY service') {
+      return 'QCY hizmetinde gerekli GATT özellikleri bulunamadı';
+    }
+    if (value ==
         'Could not reconnect after restart. Tap Retry or go back and scan.') {
       return 'Yeniden başlatmadan sonra bağlantı kurulamadı. Tekrar deneyin veya geri dönüp tarayın.';
     }
-    return message;
+    if (value.startsWith('QCY GATT service not found. Found: ')) {
+      return value.replaceFirst(
+        'QCY GATT service not found. Found: ',
+        'QCY GATT hizmeti bulunamadı. Bulunan: ',
+      );
+    }
+
+    return value;
   }
 
   String get eqBands => _tr ? 'EQ bantları' : 'EQ bands';
-  String eqUpdateFailed(Object error) =>
-      _tr ? 'EQ güncellemesi başarısız: $error' : 'EQ update failed: $error';
+  String eqUpdateFailed(Object error) => _tr
+      ? 'EQ güncellemesi başarısız: ${localizeErrorMessage(error.toString())}'
+      : 'EQ update failed: $error';
   String get presetAppliedNoBandData => _tr
       ? 'Ön ayar uygulandı ancak bant verileri dönmedi. Yenileyin veya elle ayarlayın.'
       : 'Preset applied — band data not returned. Tap refresh or adjust manually.';
-  String presetFailed(Object error) =>
-      _tr ? 'Ön ayar uygulanamadı: $error' : 'Preset failed: $error';
+  String presetFailed(Object error) => _tr
+      ? 'Ön ayar uygulanamadı: ${localizeErrorMessage(error.toString())}'
+      : 'Preset failed: $error';
   String get presets => _tr ? 'Ön ayarlar' : 'Presets';
   String get presetSubtitle => _tr
       ? 'Aşağıdaki bantlara eğrisini yüklemek için bir ön ayar seçin.'
@@ -179,13 +207,15 @@ class AppStrings {
 
   String get touchControlsSaved =>
       _tr ? 'Dokunmatik kontroller kaydedildi' : 'Touch controls saved';
-  String saveFailed(Object error) =>
-      _tr ? 'Kaydetme başarısız: $error' : 'Save failed: $error';
+  String saveFailed(Object error) => _tr
+      ? 'Kaydetme başarısız: ${localizeErrorMessage(error.toString())}'
+      : 'Save failed: $error';
   String get assignActions => _tr
       ? 'Her kulaklık hareketi için bir işlem atayın.'
       : 'Assign actions for each earbud gesture.';
 
-  String get autoReconnect => _tr ? 'Otomatik yeniden bağlan' : 'Auto-reconnect';
+  String get autoReconnect =>
+      _tr ? 'Otomatik yeniden bağlan' : 'Auto-reconnect';
   String get autoReconnectSubtitle => _tr
       ? 'Son cihaza hızlı yeniden bağlanma seçeneğini göster'
       : 'Offer quick reconnect to last device';
@@ -278,8 +308,8 @@ class _AppStringsDelegate extends LocalizationsDelegate<AppStrings> {
   const _AppStringsDelegate();
 
   @override
-  bool isSupported(Locale locale) =>
-      AppStrings.supportedLocales.any((item) => item.languageCode == locale.languageCode);
+  bool isSupported(Locale locale) => AppStrings.supportedLocales
+      .any((item) => item.languageCode == locale.languageCode);
 
   @override
   Future<AppStrings> load(Locale locale) => SynchronousFuture(AppStrings(locale));
