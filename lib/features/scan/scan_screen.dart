@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../l10n/app_strings.dart';
 import '../../models/session.dart';
 import '../../providers/providers.dart';
 import '../../widgets/pulse_bluetooth.dart';
@@ -44,9 +45,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     final denied = statuses.entries.where((e) => !e.value.isGranted);
     if (denied.isNotEmpty && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Bluetooth permissions are required to control earbuds'),
-        ),
+        SnackBar(content: Text(context.strings.bluetoothPermissionsRequired)),
       );
     }
   }
@@ -58,7 +57,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Scan failed: $e')),
+          SnackBar(content: Text(context.strings.scanFailed(e))),
         );
       }
     }
@@ -75,7 +74,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Connect failed: $e'),
+            content: Text(context.strings.connectFailed(e)),
             duration: const Duration(seconds: 6),
           ),
         );
@@ -94,7 +93,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Reconnect failed: $e')),
+          SnackBar(content: Text(context.strings.reconnectFailed(e))),
         );
       }
     } finally {
@@ -107,6 +106,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     final ble = ref.watch(bleControllerProvider);
     final scheme = Theme.of(context).colorScheme;
     final saved = ble.lastDevice;
+    final strings = context.strings;
 
     return Scaffold(
       appBar: AppBar(
@@ -116,11 +116,12 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
           IconButton(
             onPressed: () => context.push('/settings'),
             icon: const Icon(Icons.settings_outlined),
+            tooltip: strings.settings,
           ),
           IconButton(
             onPressed: ble.scanning || _connecting ? null : _scan,
             icon: const Icon(Icons.refresh),
-            tooltip: 'Scan again',
+            tooltip: strings.scanAgain,
           ),
         ],
       ),
@@ -137,7 +138,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                 child: ListTile(
                   leading: Icon(Icons.history, color: scheme.onPrimaryContainer),
                   title: Text(
-                    'Reconnect to ${saved.name}',
+                    strings.reconnectTo(saved.name),
                     style: TextStyle(color: scheme.onPrimaryContainer),
                   ),
                   subtitle: Text(
@@ -152,7 +153,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                         )
                       : FilledButton(
                           onPressed: _reconnectSaved,
-                          child: const Text('Connect'),
+                          child: Text(strings.connect),
                         ),
                 ),
               ),
@@ -162,15 +163,13 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                   PulseBluetoothIcon(active: ble.scanning || _connecting),
                   const SizedBox(height: 16),
                   Text(
-                    ble.scanning
-                        ? 'Scanning for QCY earbuds…'
-                        : 'Pull down or tap refresh to scan',
+                    ble.scanning ? strings.scanningForQcy : strings.pullOrRefresh,
                     style: Theme.of(context).textTheme.titleMedium,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Works while music is playing. Keep buds out or case open.',
+                    strings.worksWhilePlaying,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: scheme.onSurfaceVariant,
                         ),
@@ -186,7 +185,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                 child: Padding(
                   padding: const EdgeInsets.all(20),
                   child: Text(
-                    'No QCY devices found yet.',
+                    strings.noQcyDevices,
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                 ),
@@ -231,6 +230,10 @@ class _DeviceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final adv = device.advertisement;
     final scheme = Theme.of(context).colorScheme;
+    final strings = context.strings;
+    final caseLevel = adv.boxBattery > 0 && adv.boxBattery <= 100
+        ? adv.boxBattery
+        : null;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -264,9 +267,11 @@ class _DeviceCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      adv.boxBattery > 0 && adv.boxBattery <= 100
-                          ? 'L ${adv.leftBattery}% · R ${adv.rightBattery}% · Case ${adv.boxBattery}%'
-                          : 'L ${adv.leftBattery}% · R ${adv.rightBattery}%',
+                      strings.batterySummary(
+                        adv.leftBattery,
+                        adv.rightBattery,
+                        caseLevel,
+                      ),
                       style: Theme.of(context).textTheme.labelLarge,
                     ),
                   ],
