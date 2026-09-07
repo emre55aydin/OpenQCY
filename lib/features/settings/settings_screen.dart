@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/app_strings.dart';
 import '../../providers/providers.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -11,10 +12,11 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ble = ref.watch(bleControllerProvider);
     final saved = ble.lastDevice;
+    final strings = context.strings;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: Text(strings.settings),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
@@ -23,14 +25,14 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         children: [
           SwitchListTile(
-            title: const Text('Auto-reconnect'),
-            subtitle: const Text('Offer quick reconnect to last device'),
+            title: Text(strings.autoReconnect),
+            subtitle: Text(strings.autoReconnectSubtitle),
             value: ble.autoReconnect,
             onChanged: (v) => ble.setAutoReconnect(v),
           ),
           if (saved != null)
             ListTile(
-              title: Text('Saved device: ${saved.name}'),
+              title: Text(strings.savedDevice(saved.name)),
               subtitle: Text(saved.id),
               trailing: IconButton(
                 icon: const Icon(Icons.delete_outline),
@@ -38,7 +40,7 @@ class SettingsScreen extends ConsumerWidget {
                   await ble.clearSavedDevice();
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Saved device cleared')),
+                      SnackBar(content: Text(strings.savedDeviceCleared)),
                     );
                   }
                 },
@@ -46,12 +48,8 @@ class SettingsScreen extends ConsumerWidget {
             ),
           const Divider(),
           ListTile(
-            title: const Text('About OpenQCY'),
-            subtitle: const Text(
-              'Unofficial QCY earbud controller via BLE GATT.\n'
-              'Based on the Quicky protocol.\n'
-              'com.httpkiwi.melocontrol · v1.0.0',
-            ),
+            title: Text(strings.aboutOpenQcy),
+            subtitle: Text(strings.aboutDescription),
           ),
         ],
       ),
