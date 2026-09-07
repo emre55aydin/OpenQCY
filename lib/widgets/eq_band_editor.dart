@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/qcy/eq.dart';
+import '../l10n/app_strings.dart';
 
 class EqBandEditor extends StatelessWidget {
   const EqBandEditor({
@@ -71,7 +72,7 @@ class _VerticalBands extends StatelessWidget {
             child: TextButton.icon(
               onPressed: enabled ? onReset : null,
               icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Reset to flat'),
+              label: Text(context.strings.resetToFlat),
             ),
           ),
         for (var i = 0; i < bands.length; i++)
@@ -117,7 +118,7 @@ class _HorizontalBands extends StatelessWidget {
             child: TextButton.icon(
               onPressed: enabled ? onReset : null,
               icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Reset to flat'),
+              label: Text(context.strings.resetToFlat),
             ),
           ),
         SingleChildScrollView(
